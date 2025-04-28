@@ -1,62 +1,44 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-import textdistance
-import re
-from collections import Counter
+from spellchecker import SpellChecker
 
-# Title
-st.title("Simple Autocorrect App")
+# Initialize Streamlit app
+st.title("Paragraph Corrector")
 
-# File uploader
-uploaded_file = st.file_uploader("Sample", type=['txt'])
+# User Input
+paragraph_input = st.text_area("Enter a paragraph with spelling mistakes...")
 
-if uploaded_file is not None:
-    # Read file
-    file_name_data = uploaded_file.read().decode('utf-8')
-    file_name_data = file_name_data.lower()
-    words = re.findall(r'\w+', file_name_data)
-
-    # Vocabulary
-    V = set(words)
-
-    st.write(f"The first ten words in the text are: {words[:10]}")
-    st.write(f"There are {len(V)} unique words in the vocabulary.")
-
-    # Word frequency
-    word_freq_dict = Counter(words)
-    st.write("Top 10 most common words:")
-    st.write(word_freq_dict.most_common(10))
-
-    # Probabilities
-    probs = {}
-    Total = sum(word_freq_dict.values())
-    for k in word_freq_dict.keys():
-        probs[k] = word_freq_dict[k] / Total
-
-    # Autocorrect function
-    def my_autocorrect(input_word):
-        input_word = input_word.lower()
-        if input_word in V:
-            return '✅ Your word seems to be correct.'
+# Button to Check Words
+if st.button("Correct Paragraph"):
+    spell = SpellChecker()
+    words = paragraph_input.split()
+    corrected_paragraph = []
+    
+    for word in words:
+        clean_word = word.strip('.,!?;:()[]{}"\'')  # Remove punctuation for checking
+        if clean_word == '':
+            corrected_paragraph.append(word)
+            continue
+        if clean_word.lower() in spell:
+            corrected_paragraph.append(word)
         else:
-            similarities = [1 - textdistance.Jaccard(qval=2).distance(v, input_word) for v in word_freq_dict.keys()]
-            df = pd.DataFrame.from_dict(probs, orient='index').reset_index()
-            df = df.rename(columns={'index': 'Word', 0: 'Prob'})
-            df['Similarity'] = similarities
-            output = df.sort_values(['Similarity', 'Prob'], ascending=False).head()
-            return output
+            candidates = list(spell.candidates(clean_word.lower()))
+            if candidates:
+                corrected_word = candidates[0]  # Take the first suggestion
+                # Preserve the original punctuation and casing
+                if word.istitle():
+                    corrected_word = corrected_word.title()
+                elif word.isupper():
+                    corrected_word = corrected_word.upper()
+                corrected_paragraph.append(corrected_word)
+            else:
+                corrected_paragraph.append(word)
 
-    # Text input for autocorrect
-    input_word = st.text_input("Enter a word to autocorrect:")
+    # Joining the corrected paragraph
+    corrected_text = ' '.join(corrected_paragraph)
 
-    if input_word:
-        result = my_autocorrect(input_word)
-        if isinstance(result, str):
-            st.success(result)
-        else:
-            st.write("Did you mean:")
-            st.dataframe(result)
+    # Displaying results
+    st.subheader("Original Paragraph:")
+    st.write(paragraph_input)
 
-else:
-    st.info("Please upload a `.txt` file to get started.")
+    st.subheader("Corrected Paragraph:")
+    st.write(corrected_text)

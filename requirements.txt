@@ -1,5 +1,5 @@
 textblob
 nltk
-pySpellchecker
+pyspellchecker
 DictionaryIndex
 streamlit

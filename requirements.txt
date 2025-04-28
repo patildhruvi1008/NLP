@@ -1,2 +1,4 @@
 textdistance
 spellchecker
+Spellchecker,getInstance
+DictionaryIndex

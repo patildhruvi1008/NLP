@@ -1,3 +1,5 @@
-textdistance
-Spellchecker
+textblob
+nltk
+pySpellchecker
 DictionaryIndex
+streamlit
